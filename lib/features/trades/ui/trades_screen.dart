@@ -27,22 +27,25 @@ class TradesScreen extends StatelessWidget {
               actions: [
                 IconButton(
                   icon: const Icon(Icons.refresh),
-                  onPressed: () => ctx.read<TradesBloc>().add(const TradesLoaded()),
+                  onPressed: () =>
+                      ctx.read<TradesBloc>().add(const TradesLoaded()),
                 ),
               ],
             ),
             body: switch (state) {
-              TradesLoading() => const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+              TradesLoading() => const Center(
+                  child: CircularProgressIndicator(color: AppTheme.primary)),
               TradesSuccess() => state.orders.isEmpty
                   ? _emptyState()
                   : RefreshIndicator(
-                      onRefresh: () async => ctx.read<TradesBloc>().add(const TradesLoaded()),
+                      onRefresh: () async =>
+                          ctx.read<TradesBloc>().add(const TradesLoaded()),
                       color: AppTheme.primary,
                       child: ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: state.orders.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 10),
-                        itemBuilder: (_, i) => _card(state.orders[i]),
+                        itemBuilder: (c, i) => _card(state.orders[i], c),
                       ),
                     ),
               TradesFailure() => _errorState(ctx, state.message),
@@ -54,10 +57,10 @@ class TradesScreen extends StatelessWidget {
     );
   }
 
-  Widget _card(TradeOrder o) {
-    final sc        = _statusColor(o.status);
+  Widget _card(TradeOrder o, BuildContext ctx) {
+    final sc = _statusColor(o.status);
     final sideColor = o.side == 'buy' ? AppTheme.profit : AppTheme.loss;
-    final dateStr   = o.createdAt != null
+    final dateStr = o.createdAt != null
         ? DateFormat('dd MMM yyyy  HH:mm').format(o.createdAt!)
         : '—';
 
@@ -80,86 +83,159 @@ class TradesScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(o.side!.toUpperCase(),
-                  style: TextStyle(color: sideColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                    style: TextStyle(
+                        color: sideColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold)),
               ),
             Text(o.symbol,
-              style: const TextStyle(color: AppTheme.text1, fontWeight: FontWeight.bold, fontSize: 16)),
+                style: const TextStyle(
+                    color: AppTheme.text1,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16)),
           ]),
           _badge(o.status ?? 'unknown', sc),
         ]),
         const SizedBox(height: 12),
         Row(children: [
-          _info('Qty',         o.qty?.toStringAsFixed(2) ?? '—'),
-          _info('Take Profit', o.takeProfit != null ? '\$${o.takeProfit!.toStringAsFixed(2)}' : '—'),
-          _info('Stop Loss',   o.stopLoss   != null ? '\$${o.stopLoss!.toStringAsFixed(2)}'   : '—'),
+          _info('Qty', o.qty?.toStringAsFixed(2) ?? '—'),
+          _info(
+              'Take Profit',
+              o.takeProfit != null
+                  ? '\$${o.takeProfit!.toStringAsFixed(2)}'
+                  : '—'),
+          _info('Stop Loss',
+              o.stopLoss != null ? '\$${o.stopLoss!.toStringAsFixed(2)}' : '—'),
         ]),
         const SizedBox(height: 8),
-        Row(children: [
-          const Icon(Icons.access_time, color: AppTheme.text2, size: 12),
-          const SizedBox(width: 4),
-          Text(dateStr, style: const TextStyle(color: AppTheme.text2, fontSize: 11)),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Row(children: [
+            const Icon(Icons.access_time, color: AppTheme.text2, size: 12),
+            const SizedBox(width: 4),
+            Text(dateStr,
+                style: const TextStyle(color: AppTheme.text2, fontSize: 11)),
+          ]),
+          if (o.isCancellable && o.alpacaOrderId != null)
+            GestureDetector(
+              onTap: () => _confirmCancel(ctx, o),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.loss.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border:
+                      Border.all(color: AppTheme.loss.withValues(alpha: 0.4)),
+                ),
+                child: const Text('Cancel',
+                    style: TextStyle(
+                        color: AppTheme.loss,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ),
         ]),
       ]),
     );
   }
 
+  void _confirmCancel(BuildContext ctx, TradeOrder o) {
+    showDialog(
+      context: ctx,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title:
+            const Text('Cancel Order', style: TextStyle(color: AppTheme.text1)),
+        content: Text('Cancel ${o.symbol} order?',
+            style: const TextStyle(color: AppTheme.text2)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('No', style: TextStyle(color: AppTheme.text2)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ctx
+                  .read<TradesBloc>()
+                  .add(TradesCancelRequested(o.alpacaOrderId!));
+            },
+            child: const Text('Yes, Cancel',
+                style: TextStyle(color: AppTheme.loss)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _statusColor(String? s) {
     switch (s?.toLowerCase()) {
-      case 'filled':   return AppTheme.profit;
+      case 'filled':
+        return AppTheme.profit;
       case 'canceled':
-      case 'rejected': return AppTheme.loss;
-      default:         return AppTheme.gold;
+      case 'rejected':
+        return AppTheme.loss;
+      default:
+        return AppTheme.gold;
     }
   }
 
   Widget _badge(String label, Color color) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.15),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: color.withValues(alpha: 0.4)),
-    ),
-    child: Text(label.toUpperCase(),
-      style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Text(label.toUpperCase(),
+            style: TextStyle(
+                color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+      );
 
   Widget _info(String label, String value) => Expanded(
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: const TextStyle(color: AppTheme.text2, fontSize: 10)),
-      const SizedBox(height: 2),
-      Text(value, style: const TextStyle(color: AppTheme.text1, fontSize: 13, fontWeight: FontWeight.w600)),
-    ]),
-  );
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label,
+              style: const TextStyle(color: AppTheme.text2, fontSize: 10)),
+          const SizedBox(height: 2),
+          Text(value,
+              style: const TextStyle(
+                  color: AppTheme.text1,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600)),
+        ]),
+      );
 
   Widget _emptyState() => const Center(
-    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(Icons.receipt_long, color: AppTheme.text2, size: 48),
-      SizedBox(height: 12),
-      Text('No orders yet', style: TextStyle(color: AppTheme.text2)),
-    ]),
-  );
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.receipt_long, color: AppTheme.text2, size: 48),
+          SizedBox(height: 12),
+          Text('No orders yet', style: TextStyle(color: AppTheme.text2)),
+        ]),
+      );
 
   Widget _errorState(BuildContext ctx, String msg) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Icon(Icons.wifi_off, color: AppTheme.loss, size: 48),
-        const SizedBox(height: 12),
-        Text(msg, style: const TextStyle(color: AppTheme.text2), textAlign: TextAlign.center),
-        const SizedBox(height: 16),
-        ElevatedButton(
-          onPressed: () => ctx.read<TradesBloc>().add(const TradesLoaded()),
-          child: const Text('Retry'),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Icon(Icons.wifi_off, color: AppTheme.loss, size: 48),
+            const SizedBox(height: 12),
+            Text(msg,
+                style: const TextStyle(color: AppTheme.text2),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => ctx.read<TradesBloc>().add(const TradesLoaded()),
+              child: const Text('Retry'),
+            ),
+          ]),
         ),
-      ]),
-    ),
-  );
+      );
 
   void _logout(BuildContext ctx) async {
     await AuthService.clear();
     if (ctx.mounted) {
       Navigator.pushAndRemoveUntil(ctx,
-        MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
+          MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
     }
   }
 }

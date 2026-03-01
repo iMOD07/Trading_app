@@ -18,9 +18,9 @@ class ApiService {
   }
 
   // live server
-  //static const String _base = 'http://157.241.33.98:8080';
+  static const String _base = 'http://157.241.33.98:8080';
   // Test
-  static const String _base = 'http://192.168.1.100:8080';
+  //static const String _base = 'http://192.168.1.100:8080';
 
   final Dio _dio = Dio(BaseOptions(
     baseUrl: _base,
@@ -95,6 +95,10 @@ class ApiService {
     return (res.data as List)
         .map((e) => TradeOrder.fromJson(Map<String, dynamic>.from(e)))
         .toList();
+  }
+
+  Future<void> cancelOrder(String alpacaOrderId) async {
+    await _dio.delete('/api/trade/orders/$alpacaOrderId');
   }
 
   Future<List<TradeOrder>> getLastOrders() async {
