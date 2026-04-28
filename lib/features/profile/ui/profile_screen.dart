@@ -7,7 +7,6 @@ import '../../login/ui/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
-
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
@@ -15,9 +14,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordCtrl = TextEditingController();
-  final _apiKeyCtrl = TextEditingController();
-  final _apiSecretCtrl = TextEditingController();
-
+  bool _passVisible = false;
   String _username = '';
 
   @override
@@ -34,8 +31,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void dispose() {
     _passwordCtrl.dispose();
-    _apiKeyCtrl.dispose();
-    _apiSecretCtrl.dispose();
     super.dispose();
   }
 
@@ -45,16 +40,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (_) => AlertDialog(
         backgroundColor: AppTheme.card,
         title: const Text('Logout', style: TextStyle(color: AppTheme.text1)),
-        content: const Text('Are you sure?',
-            style: TextStyle(color: AppTheme.text2)),
+        content: const Text('Are you sure?', style: TextStyle(color: AppTheme.text2)),
         actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _logout(ctx);
-            },
+            onPressed: () { Navigator.pop(ctx); _logout(ctx); },
             child: const Text('Logout', style: TextStyle(color: AppTheme.loss)),
           ),
         ],
@@ -65,11 +55,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _logout(BuildContext ctx) async {
     await AuthService.clear();
     if (ctx.mounted) {
-      Navigator.pushAndRemoveUntil(
-        ctx,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (_) => false,
-      );
+      Navigator.pushAndRemoveUntil(ctx,
+          MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
     }
   }
 
@@ -90,19 +77,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         body: BlocConsumer<ProfileBloc, ProfileState>(
           listener: (context, state) {
             if (state is ProfileSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.green,
+              ));
             } else if (state is ProfileFailure) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.error),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(state.error),
+                backgroundColor: Colors.red,
+              ));
             }
           },
           builder: (context, state) {
@@ -113,42 +96,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Name (display only)
-                    Text(
-                      'Username: $_username',
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
+                    // User Info Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.card,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppTheme.border),
+                      ),
+                      child: Row(children: [
+                        const CircleAvatar(
+                          backgroundColor: AppTheme.primary,
+                          child: Icon(Icons.person, color: Colors.black),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(_username, style: const TextStyle(
+                              color: AppTheme.text1, fontWeight: FontWeight.bold, fontSize: 16)),
+                          const Text('IBKR Paper Trading', style: TextStyle(
+                              color: AppTheme.text2, fontSize: 12)),
+                        ]),
+                      ]),
                     ),
                     const SizedBox(height: 24),
 
-                    // New Password
+                    // Password
+                    const Text('Change Password', style: TextStyle(
+                        color: AppTheme.text2, fontSize: 12, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
                     TextFormField(
                       controller: _passwordCtrl,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'New Password (optional)',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Alpaca API Key
-                    TextFormField(
-                      controller: _apiKeyCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Alpaca API Key',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Alpaca API Secret
-                    TextFormField(
-                      controller: _apiSecretCtrl,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Alpaca API Secret',
-                        border: OutlineInputBorder(),
+                      obscureText: !_passVisible,
+                      style: const TextStyle(color: AppTheme.text1),
+                      decoration: InputDecoration(
+                        hintText: 'New password (optional)',
+                        suffixIcon: IconButton(
+                          icon: Icon(_passVisible ? Icons.visibility_off : Icons.visibility,
+                              color: AppTheme.text2, size: 20),
+                          onPressed: () => setState(() => _passVisible = !_passVisible),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -157,16 +144,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: state is ProfileLoading
-                            ? null
-                            : () => _submit(context),
+                        onPressed: state is ProfileLoading ? null : () => _submit(context),
                         child: state is ProfileLoading
-                            ? const CircularProgressIndicator()
+                            ? const SizedBox(height: 20, width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black))
                             : const Text('Save Changes'),
                       ),
                     ),
-
                     const SizedBox(height: 16),
+
+                    // Logout Button
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
@@ -191,13 +178,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _submit(BuildContext ctx) {
-    ctx.read<ProfileBloc>().add(
-          ProfileUpdateSubmitted(
-            username: _username,
-            password: _passwordCtrl.text.trim(),
-            alpacaApiKey: _apiKeyCtrl.text.trim(),
-            alpacaApiSecret: _apiSecretCtrl.text.trim(),
-          ),
-        );
+    ctx.read<ProfileBloc>().add(ProfileUpdateSubmitted(
+      username: _username,
+      password: _passwordCtrl.text.trim().isEmpty ? null : _passwordCtrl.text.trim(),
+    ));
   }
 }

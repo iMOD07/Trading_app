@@ -13,7 +13,7 @@ class AdminLoginScreen extends StatefulWidget {
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final _userCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
-  bool _visible   = false;
+  bool _visible = false;
 
   @override
   void dispose() {
@@ -29,8 +29,12 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       child: BlocConsumer<LoginBloc, LoginState>(
         listener: (ctx, state) {
           if (state is LoginSuccess) {
-            Navigator.pushReplacement(ctx,
-              MaterialPageRoute(builder: (_) => const AdminNavigation()));
+            Navigator.pushReplacement(
+              ctx,
+              MaterialPageRoute(
+                builder: (_) => const AdminNavigation(),
+              ),
+            );
           }
           if (state is LoginFailure) {
             ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
@@ -60,43 +64,48 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Admin Logo
+                      // ── Admin logo ──
                       Container(
-                        width: 90, height: 90,
+                        width: 90,
+                        height: 90,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppTheme.gold.withValues(alpha: 0.1),
                           border: Border.all(color: AppTheme.gold, width: 2),
                         ),
                         child: const Icon(Icons.admin_panel_settings,
-                          color: AppTheme.gold, size: 44),
+                            color: AppTheme.gold, size: 44),
                       ),
                       const SizedBox(height: 24),
                       const Text('Admin Panel',
-                        style: TextStyle(color: AppTheme.text1, fontSize: 24,
-                          fontWeight: FontWeight.bold)),
+                          style: TextStyle(
+                              color: AppTheme.text1,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold)),
                       const SizedBox(height: 6),
                       const Text('Restricted access',
-                        style: TextStyle(color: AppTheme.text2, fontSize: 13)),
-                      const SizedBox(height: 48),
+                          style:
+                              TextStyle(color: AppTheme.text2, fontSize: 13)),
+                      const SizedBox(height: 32),
 
-                      // Username
+                      // ── Username ──
                       TextField(
                         controller: _userCtrl,
                         style: const TextStyle(color: AppTheme.text1),
                         decoration: InputDecoration(
                           labelText: 'Admin Username',
                           prefixIcon: const Icon(Icons.person_outline,
-                            color: AppTheme.text2, size: 20),
+                              color: AppTheme.text2, size: 20),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppTheme.gold, width: 1.5),
+                            borderSide: const BorderSide(
+                                color: AppTheme.gold, width: 1.5),
                           ),
                         ),
                       ),
                       const SizedBox(height: 14),
 
-                      // Password
+                      // ── Password ──
                       TextField(
                         controller: _passCtrl,
                         obscureText: !_visible,
@@ -105,20 +114,27 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         decoration: InputDecoration(
                           labelText: 'Password',
                           prefixIcon: const Icon(Icons.lock_outline,
-                            color: AppTheme.text2, size: 20),
-                          suffixIcon: IconButton(
-                            icon: Icon(_visible ? Icons.visibility_off : Icons.visibility,
                               color: AppTheme.text2, size: 20),
-                            onPressed: () => setState(() => _visible = !_visible),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                                _visible
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: AppTheme.text2,
+                                size: 20),
+                            onPressed: () =>
+                                setState(() => _visible = !_visible),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppTheme.gold, width: 1.5),
+                            borderSide: const BorderSide(
+                                color: AppTheme.gold, width: 1.5),
                           ),
                         ),
                       ),
                       const SizedBox(height: 28),
 
+                      // ── Login button ──
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -128,11 +144,14 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             foregroundColor: Colors.black,
                           ),
                           child: isLoading
-                              ? const SizedBox(height: 20, width: 20,
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2.5, color: Colors.black))
+                                      strokeWidth: 2.5, color: Colors.black))
                               : const Text('Admin Login',
-                                  style: TextStyle(fontWeight: FontWeight.bold)),
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
@@ -147,7 +166,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   }
 
   void _submit(BuildContext ctx) {
-    ctx.read<LoginBloc>().add(
-      LoginSubmitted(_userCtrl.text.trim(), _passCtrl.text));
+    ctx
+        .read<LoginBloc>()
+        .add(LoginSubmitted(_userCtrl.text.trim(), _passCtrl.text));
   }
 }

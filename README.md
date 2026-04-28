@@ -29,7 +29,6 @@ flutter run
 
 ### 2. Settings Screen
 - Enter your Spring Boot server IP (e.g. `http://192.168.1.10:8080`)
-- Add Alpaca API Key + Secret
 - Keep Paper Trading ON for testing
 
 ## 🔌 Communication

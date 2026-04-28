@@ -96,7 +96,7 @@ class _OrderScreenState extends State<OrderScreen> {
                       Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Alpaca Trading Bot',
+                            Text('IBKR Trading Bot',
                                 style: TextStyle(
                                     color: AppTheme.text1,
                                     fontWeight: FontWeight.bold,

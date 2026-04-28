@@ -70,7 +70,7 @@ class AccountScreen extends StatelessWidget {
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            const Text('Portfolio Value',
+            const Text('Net Liquidation',
                 style: TextStyle(color: AppTheme.text2, fontSize: 13)),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -78,34 +78,30 @@ class AccountScreen extends StatelessWidget {
                 color: AppTheme.profit.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(account.status.toUpperCase(),
-                  style: const TextStyle(
+              child: const Text('PAPER TRADING',
+                  style: TextStyle(
                       color: AppTheme.profit,
                       fontSize: 10,
                       fontWeight: FontWeight.bold)),
             ),
           ]),
           const SizedBox(height: 8),
-          Text(_fmt(account.portfolioValue),
+          Text(_fmt(account.netLiquidation),
               style: const TextStyle(
                   color: AppTheme.text1,
                   fontSize: 32,
                   fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text('Equity: ${_fmt(account.equity)}',
+          Text('Available: ${_fmt(account.availableFunds)}',
               style: const TextStyle(color: AppTheme.text2, fontSize: 13)),
         ]),
       );
 
   Widget _statsGrid(account) {
     final items = [
-      ('💵 Cash', _fmt(account.cash), AppTheme.text1),
+      ('💵 Total Cash', _fmt(account.totalCash), AppTheme.text1),
       ('⚡ Buying Power', _fmt(account.buyingPower), AppTheme.profit),
-      (
-        '📊 Day Trades',
-        account.daytradeCount.toInt().toString(),
-        AppTheme.gold
-      ),
+      ('📊 Gross Positions', _fmt(account.grossPositionValue), AppTheme.gold),
     ];
     return GridView.count(
       crossAxisCount: 2,

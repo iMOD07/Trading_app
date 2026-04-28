@@ -1,5 +1,5 @@
 name: trading_app
-description: Alpaca Trading Bot Flutter App
+description: IBKR Trading Bot Flutter App
 publish_to: 'none'
 version: 1.0.1+2
 

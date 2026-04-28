@@ -2,11 +2,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 
 class AuthService {
-  static const _tokenKey    = 'auth_token';
+  static const _tokenKey = 'auth_token';
   static const _usernameKey = 'username';
-  static const _roleKey     = 'role';
+  static const _roleKey = 'role';
 
-  static Future<void> saveToken(String token, String username, {String role = 'USER'}) async {
+  static Future<void> saveToken(String token, String username,
+      {String role = 'USER'}) async {
     final p = await SharedPreferences.getInstance();
     await p.setString(_tokenKey, token);
     await p.setString(_usernameKey, username);

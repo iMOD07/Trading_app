@@ -59,7 +59,6 @@ class TradesScreen extends StatelessWidget {
 
   Widget _card(TradeOrder o, BuildContext ctx) {
     final sc = _statusColor(o.status);
-    final sideColor = o.side == 'buy' ? AppTheme.profit : AppTheme.loss;
     final dateStr = o.createdAt != null
         ? DateFormat('dd MMM yyyy  HH:mm').format(o.createdAt!)
         : '—';
@@ -74,20 +73,20 @@ class TradesScreen extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Row(children: [
-            if (o.side != null)
-              Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: sideColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(o.side!.toUpperCase(),
-                    style: TextStyle(
-                        color: sideColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold)),
+            // BUY badge - IBKR bracket orders دائماً BUY
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppTheme.profit.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
               ),
+              child: const Text('BUY',
+                  style: TextStyle(
+                      color: AppTheme.profit,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold)),
+            ),
             Text(o.symbol,
                 style: const TextStyle(
                     color: AppTheme.text1,
@@ -98,14 +97,32 @@ class TradesScreen extends StatelessWidget {
         ]),
         const SizedBox(height: 12),
         Row(children: [
-          _info('Qty', o.qty?.toStringAsFixed(2) ?? '—'),
+          _info('Qty', o.qty?.toStringAsFixed(0) ?? '—'),
+          _info(
+              'Entry',
+              o.entryPrice != null
+                  ? '\$${o.entryPrice!.toStringAsFixed(2)}'
+                  : '—'),
           _info(
               'Take Profit',
               o.takeProfit != null
                   ? '\$${o.takeProfit!.toStringAsFixed(2)}'
                   : '—'),
+        ]),
+        const SizedBox(height: 8),
+        Row(children: [
           _info('Stop Loss',
               o.stopLoss != null ? '\$${o.stopLoss!.toStringAsFixed(2)}' : '—'),
+          _info(
+              'Stop Price',
+              o.stopPrice != null
+                  ? '\$${o.stopPrice!.toStringAsFixed(2)}'
+                  : '—'),
+          _info(
+              'Limit Price',
+              o.limitPrice != null
+                  ? '\$${o.limitPrice!.toStringAsFixed(2)}'
+                  : '—'),
         ]),
         const SizedBox(height: 8),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -115,7 +132,7 @@ class TradesScreen extends StatelessWidget {
             Text(dateStr,
                 style: const TextStyle(color: AppTheme.text2, fontSize: 11)),
           ]),
-          if (o.isCancellable && o.alpacaOrderId != null)
+          if (o.isCancellable && o.ibkrOrderId != null)
             GestureDetector(
               onTap: () => _confirmCancel(ctx, o),
               child: Container(
@@ -158,7 +175,7 @@ class TradesScreen extends StatelessWidget {
               Navigator.pop(ctx);
               ctx
                   .read<TradesBloc>()
-                  .add(TradesCancelRequested(o.alpacaOrderId!));
+                  .add(TradesCancelRequested(o.ibkrOrderId!)); // ← ibkrOrderId
             },
             child: const Text('Yes, Cancel',
                 style: TextStyle(color: AppTheme.loss)),
@@ -172,11 +189,15 @@ class TradesScreen extends StatelessWidget {
     switch (s?.toLowerCase()) {
       case 'filled':
         return AppTheme.profit;
+      case 'cancelled':
       case 'canceled':
       case 'rejected':
         return AppTheme.loss;
-      default:
+      case 'submitted':
+      case 'presubmitted':
         return AppTheme.gold;
+      default:
+        return AppTheme.text2;
     }
   }
 

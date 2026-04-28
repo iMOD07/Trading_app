@@ -20,10 +20,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         RegisterRequest(
           username: event.username,
           password: event.password ?? '',
-          alpacaApiKey: event.alpacaApiKey ?? '',
-          alpacaApiSecret: event.alpacaApiSecret ?? '',
-          alpacaBaseUrl:
-              event.alpacaBaseUrl ?? 'https://paper-api.alpaca.markets',
         ),
       );
       emit(const ProfileSuccess('Profile updated successfully'));

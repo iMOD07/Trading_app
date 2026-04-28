@@ -1,3 +1,28 @@
+// ── Server Information ─────────────────────────────────────
+class ServerInformation {
+  final String serverName;
+  final String serverHost;
+  final String mode; // 'LIVE' or 'TEST'
+
+  ServerInformation({
+    required this.serverName,
+    required this.serverHost,
+    required this.mode,
+  });
+
+  factory ServerInformation.fromJson(Map<String, dynamic> j) => ServerInformation(
+        serverName: j['serverName'] ?? '',
+        serverHost: j['serverHost'] ?? '',
+        mode: j['mode'] ?? 'TEST',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'serverName': serverName,
+        'serverHost': serverHost,
+        'mode': mode,
+      };
+}
+
 // ── LoginRequest ──────────────────────────────────────────
 class LoginRequest {
   final String username;
@@ -6,26 +31,29 @@ class LoginRequest {
   Map<String, dynamic> toJson() => {'username': username, 'password': password};
 }
 
-// ── RegisterRequest ───────────────────────────────────────
+// ── RegisterRequest  ──────────────────
 class RegisterRequest {
   final String username;
   final String password;
-  final String alpacaApiKey;
-  final String alpacaApiSecret;
-  final String alpacaBaseUrl;
+  // final String account;
+  // final int clientid;
+  // final String host;
+  // final String port;
   RegisterRequest({
     required this.username,
     required this.password,
-    required this.alpacaApiKey,
-    required this.alpacaApiSecret,
-    this.alpacaBaseUrl = 'https://paper-api.alpaca.markets',
+    // required this.account,
+    // required this.clientid,
+    // required this.host,
+    // required this.port
   });
   Map<String, dynamic> toJson() => {
         'username': username,
         'password': password,
-        'alpacaApiKey': alpacaApiKey,
-        'alpacaApiSecret': alpacaApiSecret,
-        'alpacaBaseUrl': alpacaBaseUrl,
+        // 'account': account,
+        // 'clientid': clientid,
+        // 'host': host,
+        // 'port': port,
       };
 }
 
@@ -69,51 +97,55 @@ class AppSettings {
   }
 }
 
-// ── TradeOrder ────────────────────────────────────────────
+// ── TradeOrder - IBKR ─────────────────────────────────────
 class TradeOrder {
   final String? id;
-  final String? alpacaOrderId;
+  final String? ibkrOrderId; // ← تغيّر من alpacaOrderId
   final String symbol;
   final double? qty;
   final String? status;
+  final double? entryPrice;
   final double? takeProfit;
   final double? stopLoss;
+  final double? stopPrice;
+  final double? limitPrice;
+  final double? tradeAmount;
   final DateTime? createdAt;
-  final String? side;
-  final double? filledAvgPrice;
 
   TradeOrder({
     this.id,
-    this.alpacaOrderId,
+    this.ibkrOrderId,
     required this.symbol,
     this.qty,
     this.status,
+    this.entryPrice,
     this.takeProfit,
     this.stopLoss,
+    this.stopPrice,
+    this.limitPrice,
+    this.tradeAmount,
     this.createdAt,
-    this.side,
-    this.filledAvgPrice,
   });
 
+  // IBKR statuses: PreSubmitted, Submitted, Filled, Cancelled
   bool get isCancellable {
     final s = status?.toLowerCase();
-    return s == 'accepted' ||
-        s == 'pending_new' ||
-        s == 'new' ||
-        s == 'partially_filled';
+    return s == 'presubmitted' || s == 'submitted';
   }
 
   factory TradeOrder.fromJson(Map<String, dynamic> j) => TradeOrder(
         id: j['id']?.toString(),
-        alpacaOrderId: j['alpacaOrderId']?.toString(),
+        ibkrOrderId: j['ibkrOrderId']?.toString(),
         symbol: j['symbol'] ?? '',
-        qty: _d(j['qty'] ?? j['filledQty'] ?? j['quantity']),
-        status: j['status'] ?? j['orderStatus'],
-        takeProfit: _d(j['takeProfit'] ?? j['take_profit']),
-        stopLoss: _d(j['stopLoss'] ?? j['stop_loss']),
-        createdAt: _date(j['createdAt'] ?? j['created_at']),
-        side: j['side'],
-        filledAvgPrice: _d(j['filledAvgPrice'] ?? j['filled_avg_price']),
+        qty: _d(j['qty']),
+        status: j['orderStatus'] ?? j['status'],
+        entryPrice: _d(j['entryPrice']),
+        takeProfit: _d(j['takeProfit']),
+        stopLoss: _d(j['stopLoss']),
+        stopPrice: _d(j['stopPrice']),
+        limitPrice: _d(j['limitPrice']),
+        tradeAmount: _d(j['tradeAmount']),
+        createdAt: _date(j['createdAt']),
       );
 
   static double? _d(dynamic v) {
@@ -128,31 +160,28 @@ class TradeOrder {
   }
 }
 
-// ── Account ───────────────────────────────────────────────
+// ── Account - IBKR fields ─────────────────────────────────
 class Account {
-  final double equity;
-  final double cash;
-  final double portfolioValue;
-  final double buyingPower;
-  final double daytradeCount;
-  final String status;
+  final double netLiquidation; // NetLiquidation
+  final double totalCash; // TotalCashValue
+  final double grossPositionValue; // GrossPositionValue
+  final double availableFunds; // AvailableFunds
+  final double buyingPower; // BuyingPower
 
   Account({
-    required this.equity,
-    required this.cash,
-    required this.portfolioValue,
+    required this.netLiquidation,
+    required this.totalCash,
+    required this.grossPositionValue,
+    required this.availableFunds,
     required this.buyingPower,
-    required this.daytradeCount,
-    required this.status,
   });
 
   factory Account.fromJson(Map<String, dynamic> j) => Account(
-        equity: _d(j['equity']),
-        cash: _d(j['cash']),
-        portfolioValue: _d(j['portfolio_value'] ?? j['portfolioValue']),
-        buyingPower: _d(j['buying_power'] ?? j['buyingPower']),
-        daytradeCount: _d(j['daytrade_count'] ?? j['daytradeCount']),
-        status: j['status'] ?? '',
+        netLiquidation: _d(j['NetLiquidation']),
+        totalCash: _d(j['TotalCashValue']),
+        grossPositionValue: _d(j['GrossPositionValue']),
+        availableFunds: _d(j['AvailableFunds']),
+        buyingPower: _d(j['BuyingPower']),
       );
 
   static double _d(dynamic v) {

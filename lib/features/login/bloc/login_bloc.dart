@@ -12,15 +12,16 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     on<LoginSubmitted>(_onSubmitted);
   }
 
-  Future<void> _onSubmitted(LoginSubmitted event, Emitter<LoginState> emit) async {
+  Future<void> _onSubmitted(
+      LoginSubmitted event, Emitter<LoginState> emit) async {
     emit(const LoginLoading());
     try {
       final res = await ApiService.instance.login(
         LoginRequest(username: event.username, password: event.password),
       );
-      final token    = res['token']    as String?;
+      final token = res['token'] as String?;
       final username = res['username'] as String? ?? event.username;
-      final role     = res['role']     as String? ?? 'USER';
+      final role = res['role'] as String? ?? 'USER';
       if (token == null || token.isEmpty) throw Exception('No token received');
       await AuthService.saveToken(token, username, role: role);
       emit(const LoginSuccess());

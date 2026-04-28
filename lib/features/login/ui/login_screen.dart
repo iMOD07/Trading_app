@@ -61,18 +61,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: AppTheme.primary, size: 44),
                       ),
                       const SizedBox(height: 28),
-                      const Text('Alpaca Trading Bot',
+                      const Text('IBKR Trading Bot',
                           style: TextStyle(
                               color: AppTheme.text1,
                               fontSize: 24,
                               fontWeight: FontWeight.bold)),
                       const SizedBox(height: 6),
-                      const Text('Powered by Spring Boot + Alpaca',
+                      const Text('Powered by Spring Boot + IBKR',
                           style:
                               TextStyle(color: AppTheme.text2, fontSize: 13)),
                       const SizedBox(height: 48),
 
                       // Username
+                      // Test or Live
                       TextField(
                         controller: _userCtrl,
                         style: const TextStyle(color: AppTheme.text1),

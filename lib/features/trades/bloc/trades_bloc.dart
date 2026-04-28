@@ -22,19 +22,22 @@ class TradesBloc extends Bloc<TradesEvent, TradesState> {
       if (s.contains('UNAUTHORIZED')) {
         emit(const TradesFailure('Session expired', unauthorized: true));
       } else {
-        emit(TradesFailure(s.contains('DioException') ? 'Connection error' : s));
+        emit(
+            TradesFailure(s.contains('DioException') ? 'Connection error' : s));
       }
     }
   }
 
-  Future<void> _onCancel(TradesCancelRequested event, Emitter<TradesState> emit) async {
+  Future<void> _onCancel(
+      TradesCancelRequested event, Emitter<TradesState> emit) async {
     try {
-      await ApiService.instance.cancelOrder(event.alpacaOrderId);
+      await ApiService.instance.cancelOrder(event.ibkrOrderId);
       final orders = await ApiService.instance.getOrders();
       emit(TradesSuccess(orders));
     } catch (e) {
       final s = e.toString();
-      emit(TradesFailure(s.contains('DioException') ? 'Connection error' : 'Cancel failed'));
+      emit(TradesFailure(
+          s.contains('DioException') ? 'Connection error' : 'Cancel failed'));
     }
   }
 }

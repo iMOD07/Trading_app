@@ -11,14 +11,13 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
     on<RegisterSubmitted>(_onSubmitted);
   }
 
-  Future<void> _onSubmitted(RegisterSubmitted event, Emitter<RegisterState> emit) async {
+  Future<void> _onSubmitted(
+      RegisterSubmitted event, Emitter<RegisterState> emit) async {
     emit(const RegisterLoading());
     try {
       await ApiService.instance.register(RegisterRequest(
         username: event.username,
         password: event.password,
-        alpacaApiKey: event.apiKey,
-        alpacaApiSecret: event.apiSecret,
       ));
       emit(const RegisterSuccess());
     } catch (e) {
