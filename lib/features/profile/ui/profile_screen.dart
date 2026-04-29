@@ -12,39 +12,49 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _passwordCtrl = TextEditingController();
-  bool _passVisible = false;
   String _username = '';
+  String _role = '';
 
   @override
   void initState() {
     super.initState();
-    _loadUsername();
+    _load();
   }
 
-  Future<void> _loadUsername() async {
+  Future<void> _load() async {
     final username = await AuthService.getUsername();
-    setState(() => _username = username ?? '');
+    final role = await AuthService.getRole();
+    if (mounted) {
+      setState(() {
+        _username = username ?? '';
+        _role = role;
+      });
+    }
   }
 
-  @override
-  void dispose() {
-    _passwordCtrl.dispose();
-    super.dispose();
-  }
-
-  void _confirmLogout(BuildContext ctx) {
+  void _confirmLogout() {
     showDialog(
-      context: ctx,
+      context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppTheme.card,
         title: const Text('Logout', style: TextStyle(color: AppTheme.text1)),
-        content: const Text('Are you sure?', style: TextStyle(color: AppTheme.text2)),
+        content: const Text('Are you sure?',
+            style: TextStyle(color: AppTheme.text2)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
-            onPressed: () { Navigator.pop(ctx); _logout(ctx); },
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await AuthService.clear();
+              if (mounted) {
+                Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (_) => false);
+              }
+            },
             child: const Text('Logout', style: TextStyle(color: AppTheme.loss)),
           ),
         ],
@@ -52,135 +62,114 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _logout(BuildContext ctx) async {
-    await AuthService.clear();
-    if (ctx.mounted) {
-      Navigator.pushAndRemoveUntil(ctx,
-          MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    // ProfileBloc kept for compatibility; can be removed once UI is finalized.
     return BlocProvider(
       create: (_) => ProfileBloc(),
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Profile'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout, color: AppTheme.loss),
-              onPressed: () => _logout(context),
-            ),
-          ],
-        ),
-        body: BlocConsumer<ProfileBloc, ProfileState>(
-          listener: (context, state) {
-            if (state is ProfileSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.green,
-              ));
-            } else if (state is ProfileFailure) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(state.error),
-                backgroundColor: Colors.red,
-              ));
-            }
-          },
-          builder: (context, state) {
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // User Info Card
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppTheme.card,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppTheme.border),
-                      ),
-                      child: Row(children: [
-                        const CircleAvatar(
-                          backgroundColor: AppTheme.primary,
-                          child: Icon(Icons.person, color: Colors.black),
+        appBar: AppBar(title: const Text('Profile')),
+        body: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // User info card
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.card,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: Row(children: [
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: AppTheme.primary.withValues(alpha: 0.15),
+                    child: Text(
+                      _username.isNotEmpty ? _username[0].toUpperCase() : '?',
+                      style: const TextStyle(
+                          color: AppTheme.primary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_username,
+                            style: const TextStyle(
+                                color: AppTheme.text1,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: (_role == 'ADMIN'
+                                    ? AppTheme.gold
+                                    : AppTheme.primary)
+                                .withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(_role,
+                              style: TextStyle(
+                                  color: _role == 'ADMIN'
+                                      ? AppTheme.gold
+                                      : AppTheme.primary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold)),
                         ),
-                        const SizedBox(width: 12),
-                        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(_username, style: const TextStyle(
-                              color: AppTheme.text1, fontWeight: FontWeight.bold, fontSize: 16)),
-                          const Text('IBKR Paper Trading', style: TextStyle(
-                              color: AppTheme.text2, fontSize: 12)),
-                        ]),
-                      ]),
+                      ],
                     ),
-                    const SizedBox(height: 24),
+                  ),
+                ]),
+              ),
+              const SizedBox(height: 20),
 
-                    // Password
-                    const Text('Change Password', style: TextStyle(
-                        color: AppTheme.text2, fontSize: 12, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _passwordCtrl,
-                      obscureText: !_passVisible,
-                      style: const TextStyle(color: AppTheme.text1),
-                      decoration: InputDecoration(
-                        hintText: 'New password (optional)',
-                        suffixIcon: IconButton(
-                          icon: Icon(_passVisible ? Icons.visibility_off : Icons.visibility,
-                              color: AppTheme.text2, size: 20),
-                          onPressed: () => setState(() => _passVisible = !_passVisible),
-                        ),
-                      ),
+              // Info note
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.card,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: const Row(children: [
+                  Icon(Icons.info_outline, color: AppTheme.text2, size: 18),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'To change password or IBKR settings, please contact admin.',
+                      style: TextStyle(color: AppTheme.text2, fontSize: 12),
                     ),
-                    const SizedBox(height: 32),
+                  ),
+                ]),
+              ),
+              const Spacer(),
 
-                    // Save Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: state is ProfileLoading ? null : () => _submit(context),
-                        child: state is ProfileLoading
-                            ? const SizedBox(height: 20, width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black))
-                            : const Text('Save Changes'),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Logout Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.logout, size: 18),
-                        label: const Text('Logout'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.loss,
-                          side: const BorderSide(color: AppTheme.loss),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        onPressed: () => _confirmLogout(context),
-                      ),
-                    ),
-                  ],
+              // Logout
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.logout, size: 18),
+                  label: const Text('Logout'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.loss,
+                    side: const BorderSide(color: AppTheme.loss),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: _confirmLogout,
                 ),
               ),
-            );
-          },
+            ],
+          ),
         ),
       ),
     );
-  }
-
-  void _submit(BuildContext ctx) {
-    ctx.read<ProfileBloc>().add(ProfileUpdateSubmitted(
-      username: _username,
-      password: _passwordCtrl.text.trim().isEmpty ? null : _passwordCtrl.text.trim(),
-    ));
   }
 }

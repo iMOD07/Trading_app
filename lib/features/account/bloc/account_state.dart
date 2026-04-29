@@ -15,10 +15,10 @@ class AccountLoading extends AccountState {
 }
 
 class AccountSuccess extends AccountState {
-  final Account account;
-  const AccountSuccess(this.account);
+  final ConnectionStatus status;
+  const AccountSuccess(this.status);
   @override
-  List<Object?> get props => [account];
+  List<Object?> get props => [status];
 }
 
 class AccountFailure extends AccountState {
@@ -26,5 +26,5 @@ class AccountFailure extends AccountState {
   final bool unauthorized;
   const AccountFailure(this.message, {this.unauthorized = false});
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, unauthorized];
 }

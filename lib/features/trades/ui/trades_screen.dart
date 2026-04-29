@@ -16,9 +16,7 @@ class TradesScreen extends StatelessWidget {
       create: (_) => TradesBloc()..add(const TradesLoaded()),
       child: BlocConsumer<TradesBloc, TradesState>(
         listener: (ctx, state) {
-          if (state is TradesFailure && state.unauthorized) {
-            _logout(ctx);
-          }
+          if (state is TradesFailure && state.unauthorized) _logout(ctx);
         },
         builder: (ctx, state) {
           return Scaffold(
@@ -58,7 +56,7 @@ class TradesScreen extends StatelessWidget {
   }
 
   Widget _card(TradeOrder o, BuildContext ctx) {
-    final sc = _statusColor(o.status);
+    final sc = _statusColor(o.orderStatus);
     final dateStr = o.createdAt != null
         ? DateFormat('dd MMM yyyy  HH:mm').format(o.createdAt!)
         : '—';
@@ -73,7 +71,6 @@ class TradesScreen extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Row(children: [
-            // BUY badge - IBKR bracket orders دائماً BUY
             Container(
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -93,11 +90,11 @@ class TradesScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     fontSize: 16)),
           ]),
-          _badge(o.status ?? 'unknown', sc),
+          _badge(o.orderStatus ?? 'unknown', sc),
         ]),
         const SizedBox(height: 12),
         Row(children: [
-          _info('Qty', o.qty?.toStringAsFixed(0) ?? '—'),
+          _info('Qty', o.qty?.toString() ?? '—'),
           _info(
               'Entry',
               o.entryPrice != null
@@ -114,12 +111,12 @@ class TradesScreen extends StatelessWidget {
           _info('Stop Loss',
               o.stopLoss != null ? '\$${o.stopLoss!.toStringAsFixed(2)}' : '—'),
           _info(
-              'Stop Price',
+              'Stop Px',
               o.stopPrice != null
                   ? '\$${o.stopPrice!.toStringAsFixed(2)}'
                   : '—'),
           _info(
-              'Limit Price',
+              'Limit Px',
               o.limitPrice != null
                   ? '\$${o.limitPrice!.toStringAsFixed(2)}'
                   : '—'),
@@ -132,7 +129,7 @@ class TradesScreen extends StatelessWidget {
             Text(dateStr,
                 style: const TextStyle(color: AppTheme.text2, fontSize: 11)),
           ]),
-          if (o.isCancellable && o.ibkrOrderId != null)
+          if (o.isCancellable && o.id != null)
             GestureDetector(
               onTap: () => _confirmCancel(ctx, o),
               child: Container(
@@ -173,9 +170,8 @@ class TradesScreen extends StatelessWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              ctx
-                  .read<TradesBloc>()
-                  .add(TradesCancelRequested(o.ibkrOrderId!)); // ← ibkrOrderId
+              // Pass DB id, not ibkrOrderId
+              ctx.read<TradesBloc>().add(TradesCancelRequested(o.id!));
             },
             child: const Text('Yes, Cancel',
                 style: TextStyle(color: AppTheme.loss)),
@@ -186,15 +182,16 @@ class TradesScreen extends StatelessWidget {
   }
 
   Color _statusColor(String? s) {
-    switch (s?.toLowerCase()) {
-      case 'filled':
+    switch (s?.toUpperCase()) {
+      case 'FILLED':
         return AppTheme.profit;
-      case 'cancelled':
-      case 'canceled':
-      case 'rejected':
+      case 'CANCELLED':
+      case 'CANCELED':
+      case 'REJECTED':
         return AppTheme.loss;
-      case 'submitted':
-      case 'presubmitted':
+      case 'SUBMITTED':
+      case 'PRESUBMITTED':
+      case 'PENDING':
         return AppTheme.gold;
       default:
         return AppTheme.text2;
@@ -255,8 +252,11 @@ class TradesScreen extends StatelessWidget {
   void _logout(BuildContext ctx) async {
     await AuthService.clear();
     if (ctx.mounted) {
-      Navigator.pushAndRemoveUntil(ctx,
-          MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
+      Navigator.pushAndRemoveUntil(
+        ctx,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (_) => false,
+      );
     }
   }
 }

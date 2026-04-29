@@ -1,12 +1,12 @@
-import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../models/models.dart';
-import '../../../services/api_service.dart';
 
 part 'profile_event.dart';
 part 'profile_state.dart';
 
+/// Backend currently has no /api/auth/update endpoint.
+/// This bloc is kept as a placeholder so existing UI compiles.
+/// When the backend adds password-change support, wire it here.
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   ProfileBloc() : super(ProfileInitial()) {
     on<ProfileUpdateSubmitted>(_onUpdateSubmitted);
@@ -15,20 +15,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   Future<void> _onUpdateSubmitted(
       ProfileUpdateSubmitted event, Emitter<ProfileState> emit) async {
     emit(const ProfileLoading());
-    try {
-      await ApiService.instance.updateProfile(
-        RegisterRequest(
-          username: event.username,
-          password: event.password ?? '',
-        ),
-      );
-      emit(const ProfileSuccess('Profile updated successfully'));
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      final serverMsg = data is Map ? data['error'] as String? : null;
-      emit(ProfileFailure(serverMsg ?? 'Update failed'));
-    } on Exception catch (e) {
-      emit(ProfileFailure(e.toString().replaceAll('Exception: ', '')));
-    }
+    // Backend endpoint does not exist yet — return clear failure.
+    emit(const ProfileFailure(
+        'Profile update is not available yet. Please contact admin.'));
   }
 }

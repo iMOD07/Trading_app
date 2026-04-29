@@ -31,7 +31,8 @@ class TradesBloc extends Bloc<TradesEvent, TradesState> {
   Future<void> _onCancel(
       TradesCancelRequested event, Emitter<TradesState> emit) async {
     try {
-      await ApiService.instance.cancelOrder(event.ibkrOrderId);
+      // Backend expects DB id (Long), not ibkrOrderId.
+      await ApiService.instance.cancelOrder(event.dbOrderId);
       final orders = await ApiService.instance.getOrders();
       emit(TradesSuccess(orders));
     } catch (e) {

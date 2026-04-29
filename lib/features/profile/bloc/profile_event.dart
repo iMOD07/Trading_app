@@ -13,12 +13,7 @@ class ProfileLoaded extends ProfileEvent {
 class ProfileUpdateSubmitted extends ProfileEvent {
   final String username;
   final String? password;
-
-  const ProfileUpdateSubmitted({
-    required this.username,
-    this.password,
-  });
-
+  const ProfileUpdateSubmitted({required this.username, this.password});
   @override
   List<Object> get props => [username];
 }

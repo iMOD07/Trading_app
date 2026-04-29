@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:trading_app/features/profile/ui/profile_screen.dart';
 import '../app_theme.dart';
 import 'order/ui/order_screen.dart';
 import 'trades/ui/trades_screen.dart';
 import 'account/ui/account_screen.dart';
 import 'settings/ui/settings_screen.dart';
+import 'profile/ui/profile_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -18,7 +18,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final _screens = const [
     OrderScreen(),
     TradesScreen(),
-    AccountScreen(),
+    AccountScreen(), // = IBKR connection diagnostic
     SettingsScreen(),
     ProfileScreen(),
   ];
@@ -26,7 +26,7 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_index],
+      body: IndexedStack(index: _index, children: _screens),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AppTheme.surface,
@@ -42,15 +42,13 @@ class _MainNavigationState extends State<MainNavigation> {
           type: BottomNavigationBarType.fixed,
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.add_circle_outline), label: 'New Order'),
+                icon: Icon(Icons.add_circle_outline), label: 'Order'),
             BottomNavigationBarItem(
-              icon: Icon(Icons.list_alt), label: 'Trades'),
+                icon: Icon(Icons.list_alt), label: 'Trades'),
             BottomNavigationBarItem(
-              icon: Icon(Icons.account_balance_wallet), label: 'Account'),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.tune), label: 'Settings'),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person), label: 'Profile'),
+                icon: Icon(Icons.cable), label: 'Connection'),
+            BottomNavigationBarItem(icon: Icon(Icons.tune), label: 'Settings'),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
           ],
         ),
       ),

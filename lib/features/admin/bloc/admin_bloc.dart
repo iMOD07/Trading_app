@@ -12,6 +12,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     on<AdminUserActivated>(_onActivate);
     on<AdminUserDeactivated>(_onDeactivate);
     on<AdminRoleChanged>(_onRoleChange);
+    on<AdminUserDeleted>(_onDelete);
   }
 
   Future<void> _onLoad(AdminUsersLoaded e, Emitter<AdminState> emit) async {
@@ -54,10 +55,19 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     }
   }
 
+  Future<void> _onDelete(AdminUserDeleted e, Emitter<AdminState> emit) async {
+    try {
+      await ApiService.instance.deleteUser(e.id);
+      add(const AdminUsersLoaded());
+    } catch (err) {
+      emit(AdminFailure(_err(err)));
+    }
+  }
+
   String _err(dynamic e) {
     final s = e.toString();
     if (s.contains('UNAUTHORIZED')) return 'Unauthorized';
     if (s.contains('DioException')) return 'Connection error';
-    return s.length > 60 ? '${s.substring(0, 60)}...' : s;
+    return s.length > 80 ? '${s.substring(0, 80)}...' : s;
   }
 }

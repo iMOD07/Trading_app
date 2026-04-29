@@ -6,6 +6,8 @@ import '../../../services/api_service.dart';
 part 'account_event.dart';
 part 'account_state.dart';
 
+/// Backend doesn't expose /api/trade/account.
+/// We use /api/trade/connection instead — shows IBKR connectivity + account ID.
 class AccountBloc extends Bloc<AccountEvent, AccountState> {
   AccountBloc() : super(const AccountInitial()) {
     on<AccountLoaded>(_onLoad);
@@ -14,8 +16,9 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
   Future<void> _onLoad(AccountLoaded event, Emitter<AccountState> emit) async {
     emit(const AccountLoading());
     try {
-      final account = await ApiService.instance.getAccount();
-      emit(AccountSuccess(account));
+      final raw = await ApiService.instance.testConnection();
+      final status = ConnectionStatus.fromJson(raw);
+      emit(AccountSuccess(status));
     } catch (e) {
       final s = e.toString();
       if (s.contains('UNAUTHORIZED')) {

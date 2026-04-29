@@ -11,8 +11,9 @@ class TradesLoaded extends TradesEvent {
 }
 
 class TradesCancelRequested extends TradesEvent {
-  final String ibkrOrderId;
-  const TradesCancelRequested(this.ibkrOrderId);
+  /// DB id of the TradeOrder row (NOT ibkrOrderId).
+  final int dbOrderId;
+  const TradesCancelRequested(this.dbOrderId);
   @override
-  List<Object> get props => [ibkrOrderId];
+  List<Object> get props => [dbOrderId];
 }

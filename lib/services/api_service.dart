@@ -11,15 +11,21 @@ class ApiService {
   static ApiService? _instance;
   static ApiService get instance => _instance ??= ApiService._();
   ApiService._() {
+    _dio = Dio(BaseOptions(
+      baseUrl: _baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+      headers: {'Content-Type': 'application/json'},
+    ));
     _setupInterceptors();
   }
 
   static void resetInstance() => _instance = null;
 
-  // Production
-  static String _baseUrl = 'http://172.20.10.2:8080';
-  // Test
-  //static String _baseUrl = 'http://localhost:8080';
+  // Default — can be overridden via setServerHost()
+  static String _baseUrl = 'http://98.85.235.215:8080';
+
+  late final Dio _dio;
 
   /// Call once in main() before runApp — loads saved host from SharedPreferences
   static Future<void> init() async {
@@ -28,20 +34,13 @@ class ApiService {
     if (saved != null && saved.isNotEmpty) _baseUrl = saved;
   }
 
-  /// Called after admin registers/updates a server — persists and reloads
+  /// Persist new server host and force singleton rebuild
   static Future<void> setServerHost(String host) async {
     final p = await SharedPreferences.getInstance();
     await p.setString('server_host', host);
     _baseUrl = host;
     resetInstance();
   }
-
-  final Dio _dio = Dio(BaseOptions(
-    baseUrl: _baseUrl,
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    headers: {'Content-Type': 'application/json'},
-  ));
 
   void _setupInterceptors() {
     _dio.interceptors.add(InterceptorsWrapper(
@@ -50,45 +49,25 @@ class ApiService {
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
-
         if (kDebugMode) {
-          print('═══════════════ REQUEST ═══════════════');
-          print('➡️ ${options.method} ${options.uri}');
-          print('📋 Headers: ${options.headers}');
-          if (options.data != null) {
-            print('📦 Body: ${options.data}');
-          }
-          if (options.queryParameters.isNotEmpty) {
-            print('🔍 Query: ${options.queryParameters}');
-          }
-          print('═══════════════════════════════════════');
+          debugPrint('➡️ ${options.method} ${options.uri}');
+          if (options.data != null) debugPrint('📦 ${options.data}');
         }
-
         handler.next(options);
       },
       onResponse: (response, handler) {
         if (kDebugMode) {
-          print('═══════════════ RESPONSE ══════════════');
-          print(
-              '✅ ${response.statusCode} ${response.requestOptions.method} ${response.requestOptions.uri}');
-          print('📦 Data: ${response.data}');
-          print('═══════════════════════════════════════');
+          debugPrint('✅ ${response.statusCode} ${response.requestOptions.uri}');
         }
-
         handler.next(response);
       },
       onError: (error, handler) async {
         if (kDebugMode) {
-          print('═══════════════ ERROR ═════════════════');
-          print(
-              '❌ ${error.response?.statusCode} ${error.requestOptions.method} ${error.requestOptions.uri}');
-          print('💬 Message: ${error.message}');
-          if (error.response?.data != null) {
-            print('📦 Error Data: ${error.response?.data}');
-          }
-          print('═══════════════════════════════════════');
+          debugPrint(
+              '❌ ${error.response?.statusCode} ${error.requestOptions.uri}');
+          if (error.response?.data != null)
+            debugPrint('📦 ${error.response?.data}');
         }
-
         if (error.response?.statusCode == 401) {
           await AuthService.clear();
           navigatorKey.currentState?.pushAndRemoveUntil(
@@ -107,21 +86,22 @@ class ApiService {
     ));
   }
 
-  // ── Auth ──────────────────────────────────────────────
+  // ═══════════════════════════════════════════════
+  // AUTH
+  // ═══════════════════════════════════════════════
   Future<Map<String, dynamic>> login(LoginRequest req) async {
     final res = await _dio.post('/api/auth/login', data: req.toJson());
     return Map<String, dynamic>.from(res.data);
   }
 
-  Future<void> register(RegisterRequest req) async {
-    await _dio.post('/api/auth/register', data: req.toJson());
+  Future<Map<String, dynamic>> register(RegisterRequest req) async {
+    final res = await _dio.post('/api/auth/register', data: req.toJson());
+    return Map<String, dynamic>.from(res.data);
   }
 
-  Future<void> updateProfile(RegisterRequest req) async {
-    await _dio.post('/api/auth/update', data: req.toJson());
-  }
-
-  // ── Trade ─────────────────────────────────────────────
+  // ═══════════════════════════════════════════════
+  // TRADE
+  // ═══════════════════════════════════════════════
   Future<Map<String, dynamic>> sendOrder(OrderRequest req) async {
     final res = await _dio.post('/api/trade/order', data: req.toJson());
     return res.data is Map
@@ -129,9 +109,10 @@ class ApiService {
         : {'response': res.data.toString()};
   }
 
-  Future<Account> getAccount() async {
-    final res = await _dio.get('/api/trade/account');
-    return Account.fromJson(Map<String, dynamic>.from(res.data));
+  /// IMPORTANT: backend expects DB id (Long), NOT ibkrOrderId.
+  /// Endpoint: DELETE /api/trade/order/{id}  (singular "order")
+  Future<void> cancelOrder(int dbOrderId) async {
+    await _dio.delete('/api/trade/order/$dbOrderId');
   }
 
   Future<List<TradeOrder>> getOrders() async {
@@ -139,10 +120,6 @@ class ApiService {
     return (res.data as List)
         .map((e) => TradeOrder.fromJson(Map<String, dynamic>.from(e)))
         .toList();
-  }
-
-  Future<void> cancelOrder(String ibkrOrderId) async {
-    await _dio.delete('/api/trade/orders/$ibkrOrderId');
   }
 
   Future<List<TradeOrder>> getLastOrders() async {
@@ -156,7 +133,22 @@ class ApiService {
     return [TradeOrder.fromJson(Map<String, dynamic>.from(data))];
   }
 
-  // ── Settings ──────────────────────────────────────────
+  Future<List<TradeOrder>> getOrdersBySymbol(String symbol) async {
+    final res = await _dio.get('/api/trade/orders/symbol/$symbol');
+    return (res.data as List)
+        .map((e) => TradeOrder.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  /// Diagnostic — checks if user's IB Gateway is reachable
+  Future<Map<String, dynamic>> testConnection() async {
+    final res = await _dio.get('/api/trade/connection');
+    return Map<String, dynamic>.from(res.data);
+  }
+
+  // ═══════════════════════════════════════════════
+  // SETTINGS
+  // ═══════════════════════════════════════════════
   Future<AppSettings> getSettings() async {
     final res = await _dio.get('/api/settings');
     return AppSettings.fromJson(Map<String, dynamic>.from(res.data));
@@ -166,37 +158,19 @@ class ApiService {
     await _dio.post('/api/settings', data: settings.toJson());
   }
 
-  // ── Server Information ────────────────────────────────────────
-  Future<List<ServerInformation>> getServers() async {
-    final res = await _dio.get('/api/server');
-    return (res.data as List)
-        .map((e) => ServerInformation.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
-  }
-
-  Future<ServerInformation> getServer(String serverName) async {
-    final res = await _dio.get('/api/server/$serverName');
-    return ServerInformation.fromJson(Map<String, dynamic>.from(res.data));
-  }
-
-  Future<void> registerServer(ServerInformation server) async {
-    await _dio.post('/api/server/register', data: server.toJson());
-  }
-
-  Future<void> updateServer(ServerInformation server) async {
-    await _dio.put('/api/server/update', data: server.toJson());
-  }
-
-  Future<void> deleteServer(ServerInformation server) async {
-    await _dio.delete('/api/server/delete', data: server.toJson());
-  }
-
-  // ── Admin ─────────────────────────────────────────────
+  // ═══════════════════════════════════════════════
+  // ADMIN
+  // ═══════════════════════════════════════════════
   Future<List<AppUser>> getUsers() async {
     final res = await _dio.get('/api/admin/users');
     return (res.data as List)
         .map((e) => AppUser.fromJson(Map<String, dynamic>.from(e)))
         .toList();
+  }
+
+  Future<AppUser> getUser(int id) async {
+    final res = await _dio.get('/api/admin/users/$id');
+    return AppUser.fromJson(Map<String, dynamic>.from(res.data));
   }
 
   Future<void> activateUser(int id) async {
@@ -209,5 +183,21 @@ class ApiService {
 
   Future<void> changeRole(int id, String role) async {
     await _dio.post('/api/admin/users/$id/role', data: {'role': role});
+  }
+
+  Future<void> configureIbkr(int id, IbkrConfigRequest config) async {
+    await _dio.post('/api/admin/users/$id/ibkr-config', data: config.toJson());
+  }
+
+  Future<void> deleteUser(int id) async {
+    await _dio.delete('/api/admin/users/$id');
+  }
+
+  Future<int> getActiveConnectionCount() async {
+    final res = await _dio.get('/api/admin/connections/active');
+    final data = Map<String, dynamic>.from(res.data);
+    final v = data['activeConnections'];
+    if (v is int) return v;
+    return int.tryParse(v.toString()) ?? 0;
   }
 }
