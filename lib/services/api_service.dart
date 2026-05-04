@@ -23,7 +23,8 @@ class ApiService {
   static void resetInstance() => _instance = null;
 
   // Default — can be overridden via setServerHost()
-  static String _baseUrl = 'http://98.85.235.215:8080';
+  //static String _baseUrl = 'http://98.85.235.215:8080';
+  static String _baseUrl = '';
 
   late final Dio _dio;
 
