@@ -1,0 +1,14 @@
+[build]
+  command = "flutter build web --release"
+  publish = "build/web"
+
+[[redirects]]
+  from = "/api/*"
+  to = "http://98.85.235.215:8080/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

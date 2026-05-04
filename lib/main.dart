@@ -5,11 +5,13 @@ import 'services/auth_service.dart';
 import 'features/login/ui/login_screen.dart';
 import 'features/main_navigation.dart';
 import 'features/admin/ui/admin_navigation.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  usePathUrlStrategy();
   await ApiService.init();
   final isLoggedIn = await AuthService.isLoggedIn();
   final isAdmin = isLoggedIn ? await AuthService.isAdmin() : false;
